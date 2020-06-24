@@ -5,7 +5,7 @@ from flask_cors import CORS
 from flask_heroku import Heroku
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = ""
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgres://ecyillztfyrtqs:3f94d910a172ba187593dc19dd45ef9a4a6af9109b187cc9aee7d8c2120e9656@ec2-34-230-231-71.compute-1.amazonaws.com:5432/dea3rjmml8rrnh"
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -110,6 +110,39 @@ def get_one_reminder(date, month, year):
     reminder = db.session.query(Reminder).filter(Reminder.date == date).filter(Reminder.month == month).filter(Reminder.year == year).first()
 
     return jsonify(reminder_schema.dump(reminder))
+
+@app.route("/reminder/update", methods=["PUT"])
+def update_reminder():
+    if request.content_type != "application/json":
+        return jsonify("Error: Data must be sent as JSON")
+
+    put_data = request.get_json()
+    text = put_data.get("text")
+    date = put_data.get("date")
+    month = put_data.get("month")
+    year = put_data.get("year")
+
+    reminder = db.session.query(Reminder).filter(Reminder.date == date).filter(Reminder.month == month).filter(Reminder.year == year).first()
+    reminder.text = text
+    db.session.commit()
+
+    return jsonify("Reminder updated")
+
+@app.route("/reminder/delete", methods=["DELETE"])
+def delete_reminder():
+    if request.content_type != "application/json":
+        return jsonify("Error: Data must be sent as JSON")
+
+    delete_data = request.get_json()
+    date = delete_data.get("date")
+    month = delete_data.get("month")
+    year = delete_data.get("year")
+
+    reminder = db.session.query(Reminder).filter(Reminder.date == date).filter(Reminder.month == month).filter(Reminder.year == year).first()
+    db.session.delete(reminder)
+    db.session.commit()
+
+    return jsonify("Reminder deleted")
 
 if __name__ == "__main__":
     app.run(debug=True)
